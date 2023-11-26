@@ -6,7 +6,6 @@ const mongoose = require("mongoose");
 const userSchema = require("./schema/user");
 const bcrypt = require("bcrypt");
 const md5 = require("md5");
-const { default: axios } = require("axios");
 
 
 
