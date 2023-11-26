@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const userSchema = require("./schema/user");
 const bcrypt = require("bcrypt");
 const md5 = require("md5");
+const { default: axios } = require("axios");
 
 
 
@@ -23,20 +24,39 @@ const User = mongoose.model("User", userSchema);
 app.post("/data", async (req, res) => {
     try {
         const data = req.body;
-        
         const newUser = new User({
             name: data.name,
             email: data.email,
             phone: data.phone,
             password: md5(data.confirmPassword),
-            cart: "",
+            cart: [],
+            recently_viewed: [],
+            orders: [{}],
+            address: {
+                street: data.street,
+                city: data.city,
+                state: data.state,
+                zipcode: data.zipcode,
+                country: data.country,
+            },
         });
-        await newUser.save();
+        const foundItems = await User.findOne({email: newUser.email});
+        if (foundItems === null) {
+            newUser.save();
+            res.json({ "result": "Registered" });
+        }
+        else {
+            res.json({ "result": "Not Registered", "error": "Email Already Registered" })
+        }
     } catch (error) {
         console.error("Error handling data:", error);
         res.status(500).json({ error: "An error occurred while processing the data" });
     }
 });
+
+app.get("/",(req,res) => {
+    res.send("<h1>Hello world</h1>");
+})
 
 app.post("/userdata", async (req, res) => {
     try {

@@ -5,7 +5,28 @@ const userSchema = new mongoose.Schema({
   email: String,
   phone: String,
   password: String,
-  cart: String
+  cart: [String],
+  recently_viewed: [String],
+  "address": {
+    "street": String,
+    "city": String,
+    "state": String,
+    "zipCode": String,
+    "country": String
+  },
+  orders: [{
+    "orderId": String,
+    "restaurantId": String,
+    "items": [
+      {
+        "itemId": String,
+        "name": String,
+        "quantity": Number,
+        "price": Number,
+      }
+    ],
+    "totalAmount": Number,
+  }],
 });
 
 module.exports = userSchema;
