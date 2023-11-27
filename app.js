@@ -64,7 +64,6 @@ app.post("/userdata", async (req, res) => {
         const email = sentData.username.join(', ');
         const password = sentData.password.join(', ');
         const foundItems = await User.findOne({email:email});
-        console.log(foundItems);
         if (foundItems == null) {
             res.json({loginStatus: "Failed",error: "email not found"});
         }
