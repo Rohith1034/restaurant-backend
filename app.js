@@ -6,7 +6,10 @@ const mongoose = require("mongoose");
 const userSchema = require("./schema/user");
 const bcrypt = require("bcrypt");
 const md5 = require("md5");
+<<<<<<< HEAD
 
+=======
+>>>>>>> d5b4e8d5673658c845b9d6491845fc2f78f9a5f1
 
 
 
