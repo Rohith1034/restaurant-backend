@@ -60,9 +60,22 @@ app.get("/",(req,res) => {
 
 app.post("/userdata", async (req, res) => {
     try {
-        const usesCollection = mongoose.connection.collection("users");
-        const userData = await usesCollection.find({}).toArray();
-        res.json(userData);
+        const sentData = req.body;
+        const email = sentData.username.join(', ');
+        const password = sentData.password.join(', ');
+        const foundItems = await User.findOne({email:email});
+        console.log(foundItems);
+        if (foundItems == null) {
+            res.json({loginStatus: "Failed",error: "email not found"});
+        }
+        else if(foundItems != null){
+            if (foundItems.password === md5(password)) {
+                res.json({loginStatus: "success",userid:foundItems._id});
+            }
+            else {
+                res.json({loginStatus: "failed",error: "incorrect password"})
+            }
+        }
     }
 
     catch(error) {
