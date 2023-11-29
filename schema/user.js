@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
     "zipCode": String,
     "country": String
   },
+  admin: Boolean,
   orders: [{
     "orderId": String,
     "restaurantId": String,

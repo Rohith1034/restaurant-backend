@@ -31,6 +31,7 @@ app.post("/data", async (req, res) => {
             password: md5(data.confirmPassword),
             cart: [],
             recently_viewed: [],
+            admin: false,
             orders: [{}],
             address: {
                 street: data.street,
