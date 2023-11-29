@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const userSchema = require("./schema/user");
 const bcrypt = require("bcrypt");
 const md5 = require("md5");
+const menuSchema = require("./schema/Menu");
 
 
 
@@ -20,6 +21,7 @@ app.use(bodyParser.json());
 
 // Create a mongoose model from the userSchema
 const User = mongoose.model("User", userSchema);
+const Menu = mongoose.model("menu",menuSchema);
 
 app.post("/data", async (req, res) => {
     try {
@@ -78,6 +80,16 @@ app.post("/userdata", async (req, res) => {
         }
     }
 
+    catch(error) {
+        console.log(error);
+    }
+})
+
+app.post("/menudata",async(req,res) => {
+    try {
+        const foundItems = await Menu.find({});
+        res.json(foundItems)
+    }
     catch(error) {
         console.log(error);
     }
