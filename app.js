@@ -99,6 +99,17 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
+app.post("/fooditems/:id",async(req,res) => {
+    try {
+        const id = req.params;
+        const fooditems = await Menu.find({_id:new mongoose.Types.ObjectId(id)});
+        res.json(fooditems);
+    }
+    catch (error) {
+        console.log(error);
+    }
+} )
+
 const main = async () => {
     try {
         await mongoose.connect(
