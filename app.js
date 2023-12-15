@@ -100,6 +100,17 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
+app.get("/allfooditems",async(req,res) => {
+    try {
+        const fooditems = await Menu.find({});
+        res.json(fooditems);
+    }
+    catch (error) {
+        console.log(error);
+    }
+})
+
+
 app.post("/fooditems/:id", async (req, res) => {
     try {
         const id = req.params.id;
