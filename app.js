@@ -305,12 +305,7 @@ app.post("/orderdata",async(req,res) => {
 app.post("/menudata", async (req, res) => {
     try {
         const foundItems = await Menu.find({});
-        if (foundItems != null) {
-            res.status(404);
-        }
-        else {
-            res.status(200).json(foundItems);
-        }
+        res.json(foundItems);
     }
     catch (error) {
         console.log(error);
