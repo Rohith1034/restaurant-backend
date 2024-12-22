@@ -10,10 +10,10 @@ const menuSchema = require("./schema/Menu");
 const restaurantSchema = require("./schema/Restaurant");
 const sequenceSchema = require("./schema/Sequence");
 
-
 const saltRounds = 10;
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -24,6 +24,7 @@ const User = mongoose.model("User", userSchema);
 const Menu = mongoose.model("menu", menuSchema);
 const Restaurant = mongoose.model("Restaurant", restaurantSchema);
 const Sequence = mongoose.model('Sequence', sequenceSchema);
+
 app.post("/data", async (req, res) => {
     try {
         const data = req.body;
@@ -34,6 +35,7 @@ app.post("/data", async (req, res) => {
             password: md5(data.confirmPassword),
             cart: [],
             recently_viewed: [],
+            profile_pic: "",
             admin: false,
             orders: [{}],
             address: {
@@ -86,10 +88,229 @@ app.post("/userdata", async (req, res) => {
     }
 })
 
+app.post("/profiledata", async(req, res) => {
+    try {
+        const sentData = req.body;
+        const foundUsers = await User.findOne({id:sentData.userId});
+        res.json(foundUsers);
+        
+    } catch (error) {
+        console.error("Error processing /profiledata:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.post("/updateprofile",async(req,res) => {
+    try {
+        const data = req.body;
+        const founduser = await User.findOne({id: data.userId});
+        founduser.name = data.name;
+        founduser.email = data.email;
+        founduser.phone = data.phone;
+        founduser.password = data.password;
+        founduser.cart = data.cart;
+        founduser.recently_viewed = data.recently_viewed;
+        founduser.orders = data.orders;
+        founduser.profile_pic = data.profile_pic;
+        founduser.admin = data.admin;
+        founduser.address.street = data.address.street;
+        founduser.address.city = data.address.city;
+        founduser.address.state = data.address.state;
+        founduser.address.country = data.address.country;
+        founduser.address.zipCode = data.address.zipCode;
+        founduser.save();
+    }
+    catch (error) {
+
+    }
+})
+app.post("/addtocart", async (req, res) => {
+    try {
+        const data = req.body;
+        
+
+        const userId = data.userId;
+
+        // Find the user by _id
+        const foundUser = await User.findById(userId);
+        //console.log(foundUser);
+
+        if (!foundUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Check if the item already exists in the cart
+        let existingItem = foundUser.cart.find(cartItem => cartItem.itemId === data.id);
+
+        // Use data.itemId to fetch the menu item
+        const menuData = await Menu.findOne({ _id: new mongoose.Types.ObjectId(data.id) });
+        
+        if (!menuData) {
+            return res.status(404).json({ message: "Menu item not found" });
+        }
+
+        if (existingItem) {
+            // Increment quantity if item exists
+            existingItem.quantity += 1;
+        } else {
+            // Add new item to cart if it doesn't exist
+            const newitem = {
+                itemId: menuData.id,
+                name: menuData.name,
+                price: menuData.price,
+                image: menuData.image,
+                quantity: 1,
+            };
+            foundUser.cart.push(newitem);
+        }
+
+        
+        await foundUser.save();
+        res.status(200).json({ message: "Item added to cart", cart: foundUser.cart });
+
+    } catch (error) {
+        console.error("Error in adding to cart:", error);
+        res.status(500).json({ error: "An error occurred while adding to cart" });
+    }
+});
+
+
+
+const { ObjectId } = mongoose.Types; // Ensure ObjectId is imported
+
+app.post("/wishlistdata", async (req, res) => {
+    try {
+        const userid = req.body.userId;
+        const foundUser = await User.findOne({ _id: userid });
+        if (foundUser) {
+            res.json(foundUser);
+        }
+    }
+    catch (error) {
+
+    }
+});
+
+
+app.post("/wishlistdel",async(req,res) => {
+    const data = req.body;
+    const foundUser = await User.findOne({id:data.userID})
+    if (foundUser) {
+        var cartItems = foundUser.cart;
+        for (let i = 0;i < cartItems.length;i++) {
+            if (data.itemId === cartItems[i]._id.toString()) {
+                cartItems.pop(i);
+            }
+        }
+        foundUser.cart = cartItems;
+        foundUser.save();
+        res.json(foundUser);
+    }
+})
+
+app.post("/placeorder", async (req, res) => {
+    try {
+        const response = req.body;
+        const userid = response.id;
+
+        // Find the user by ID
+        const foundUser = await User.findOne({ _id: userid });
+        if (!foundUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Calculate total amount and prepare items array
+        let totalAmount = 0;
+        const items = response.data.map((entry) => {
+            const { item } = entry; // Extract the nested item
+            if (
+                typeof item.price !== "number" ||
+                typeof item.quantity !== "number" ||
+                isNaN(item.price) ||
+                isNaN(item.quantity)
+            ) {
+                throw new Error(`Invalid item data: ${JSON.stringify(entry)}`);
+            }
+
+            totalAmount += item.price * item.quantity;
+            return {
+                itemId: item.itemId,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                img: item.image
+            };
+        });
+
+        // Create a new order
+        const newOrder = {
+            orderId: `order_${Date.now()}`, // Generate a unique order ID
+            items: items,
+            totalAmount: totalAmount,
+        };
+
+        // Push the new order to the user's orders array
+        foundUser.orders.push(newOrder);
+        foundUser.cart = [];
+        await foundUser.save();
+        
+        res.status(200);
+    } catch (error) {
+        console.error("Error placing order:", error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+});
+
+
+
+app.post("/updatequantity",async(req,res) => {
+    try {
+    
+        const userId = req.body.userId;
+        const itemId = req.body.itemId;
+        const quantity = req.body.quantity;
+        const foundUser = await User.findOne({id:userId});
+        let index = 0;
+        if (foundUser) {
+            for (let i = 0;i < foundUser.cart.length;i++){
+                if (itemId === foundUser.cart[i]._id.toString()) {
+                    console.log(index)
+                    index = i;
+                }
+            }
+            foundUser.cart[index].quantity = quantity;
+            foundUser.save();
+            res.json(foundUser);
+        }
+        
+    }
+    catch (error) {
+
+    }
+})
+
+app.post("/orderdata",async(req,res) => {
+    try {
+        const response = req.body;
+        const foundUser = await User.findOne({id:response.userId});
+        if (foundUser) {
+            res.status(200).json(foundUser.orders);
+        }
+    }
+    catch (error) {
+
+    }
+})
+
 app.post("/menudata", async (req, res) => {
     try {
         const foundItems = await Menu.find({});
-        res.json(foundItems)
+        if (foundItems != null) {
+            res.status(404);
+        }
+        else {
+            res.status(200);
+        }
     }
     catch (error) {
         console.log(error);
@@ -109,7 +330,6 @@ app.get("/allfooditems",async(req,res) => {
         console.log(error);
     }
 })
-
 
 app.post("/fooditems/:id", async (req, res) => {
     try {
@@ -237,8 +457,6 @@ const deleteItem = async (resid, foodid) => {
     }
 };
 
-
-
 app.post("/restaurant/fooditem/delete", async (req, res) => {
     try {
         const data = await req.body;
@@ -288,6 +506,7 @@ app.post("/restaurant/details/:id", async (req, res) => {
     }
 })
 
+
 app.post("/restaurantfooditems/:id", async (req, res) => {
     try {
         const id = req.params.id;
@@ -305,7 +524,6 @@ app.post("/restaurantfooditems/:id", async (req, res) => {
     }
 })
 
-
 const main = async () => {
     try {
         await mongoose.connect(
@@ -320,7 +538,6 @@ const main = async () => {
         console.log(error);
     }
 };
-
 
 async function getNextSequenceValue(sequenceName) {
     try {
