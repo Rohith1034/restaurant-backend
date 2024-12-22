@@ -309,7 +309,7 @@ app.post("/menudata", async (req, res) => {
             res.status(404);
         }
         else {
-            res.status(200);
+            res.status(200).json(foundItems);
         }
     }
     catch (error) {
